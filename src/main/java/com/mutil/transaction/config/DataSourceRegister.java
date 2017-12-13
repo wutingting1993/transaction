@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -23,6 +24,8 @@ import org.springframework.context.annotation.AnnotationBeanNameGenerator;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /**
  * Created by WuTing on 2017/12/8.
@@ -30,9 +33,10 @@ import org.springframework.core.type.AnnotationMetadata;
 public class DataSourceRegister implements ImportBeanDefinitionRegistrar, EnvironmentAware {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceRegister.class);
 	private static final BeanNameGenerator beanNameGenerator = new AnnotationBeanNameGenerator();
-	private static final String[] DATA_SOURCE_TYPE_NAMES = {"org.apache.tomcat.jdbc.pool.DataSource",
-		"com.zaxxer.hikari.HikariDataSource", "org.apache.commons.dbcp.BasicDataSource",
-		"org.apache.commons.dbcp2.BasicDataSource"};
+	private static final String[] DATA_SOURCE_TYPE_NAMES = {"org.apache.tomcat.jdbc.pool.DataSource", "com.zaxxer.hikari.HikariDataSource", "org.apache.commons.dbcp.BasicDataSource", "org.apache.commons.dbcp2.BasicDataSource"};
+	private static final String JDBC_TEMPLATE_NAME = "jdbcTemplate";
+	private static final String DATA_SOURCE_NAME = "dataSource";
+	private static final String TRANSACTION_MANAGER_NAME = "transactionManager";
 	private static Map<String, Map<String, Object>> dataSourceMap = new HashMap<>();
 	private static Map<String, Object> commProperties = new HashMap<>();
 	private static Map<String, Object> poolProperties = new HashMap<>();
@@ -43,6 +47,32 @@ public class DataSourceRegister implements ImportBeanDefinitionRegistrar, Enviro
 		this.registerDataSources(registry);
 
 		this.registerDynamicDataSource(registry);
+
+//		this.registerJdbcTemplate(registry);
+//
+//		this.registerDataSourceTransactionManager(registry);
+	}
+
+	private void registerDataSourceTransactionManager(BeanDefinitionRegistry registry) {
+		GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+		beanDefinition.setSynthetic(true);
+		beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
+		beanDefinition.setBeanClass(DataSourceTransactionManager.class);
+		ConstructorArgumentValues args = new ConstructorArgumentValues();
+		args.addIndexedArgumentValue(0, new RuntimeBeanReference(DATA_SOURCE_NAME));
+		beanDefinition.setConstructorArgumentValues(args);
+		registry.registerBeanDefinition(TRANSACTION_MANAGER_NAME, beanDefinition);
+	}
+
+	private void registerJdbcTemplate(BeanDefinitionRegistry registry) {
+		GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+		beanDefinition.setSynthetic(true);
+		beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
+		beanDefinition.setBeanClass(JdbcTemplate.class);
+		ConstructorArgumentValues args = new ConstructorArgumentValues();
+		args.addIndexedArgumentValue(0, new RuntimeBeanReference(DATA_SOURCE_NAME));
+		beanDefinition.setConstructorArgumentValues(args);
+		registry.registerBeanDefinition(JDBC_TEMPLATE_NAME, beanDefinition);
 	}
 
 	private void registerDataSources(BeanDefinitionRegistry registry) {
@@ -76,7 +106,7 @@ public class DataSourceRegister implements ImportBeanDefinitionRegistrar, Enviro
 		ConstructorArgumentValues args = new ConstructorArgumentValues();
 		args.addIndexedArgumentValue(0, primary);
 		beanDefinition.setConstructorArgumentValues(args);
-		registry.registerBeanDefinition("dataSource", beanDefinition);
+		registry.registerBeanDefinition(DATA_SOURCE_NAME, beanDefinition);
 	}
 
 	private void printDataSourceConfigInfo(String dataSourceName, GenericBeanDefinition beanDefinition) {
