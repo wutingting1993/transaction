@@ -33,10 +33,13 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 public class DataSourceRegister implements ImportBeanDefinitionRegistrar, EnvironmentAware {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceRegister.class);
 	private static final BeanNameGenerator beanNameGenerator = new AnnotationBeanNameGenerator();
-	private static final String[] DATA_SOURCE_TYPE_NAMES = {"org.apache.tomcat.jdbc.pool.DataSource", "com.zaxxer.hikari.HikariDataSource", "org.apache.commons.dbcp.BasicDataSource", "org.apache.commons.dbcp2.BasicDataSource"};
+	private static final String[] DATA_SOURCE_TYPE_NAMES = {"org.apache.tomcat.jdbc.pool.DataSource",
+		"com.zaxxer.hikari.HikariDataSource", "org.apache.commons.dbcp.BasicDataSource",
+		"org.apache.commons.dbcp2.BasicDataSource"};
 	private static final String JDBC_TEMPLATE_NAME = "jdbcTemplate";
 	private static final String DATA_SOURCE_NAME = "dataSource";
 	private static final String TRANSACTION_MANAGER_NAME = "transactionManager";
+	private static final String s = "---------------------";
 	private static Map<String, Map<String, Object>> dataSourceMap = new HashMap<>();
 	private static Map<String, Object> commProperties = new HashMap<>();
 	private static Map<String, Object> poolProperties = new HashMap<>();
@@ -48,9 +51,9 @@ public class DataSourceRegister implements ImportBeanDefinitionRegistrar, Enviro
 
 		this.registerDynamicDataSource(registry);
 
-//		this.registerJdbcTemplate(registry);
-//
-//		this.registerDataSourceTransactionManager(registry);
+		//		this.registerJdbcTemplate(registry);
+		//
+		//		this.registerDataSourceTransactionManager(registry);
 	}
 
 	private void registerDataSourceTransactionManager(BeanDefinitionRegistry registry) {
@@ -113,8 +116,8 @@ public class DataSourceRegister implements ImportBeanDefinitionRegistrar, Enviro
 		System.out.println("\n");
 		LOGGER.warn(dataSourceName);
 		Arrays.stream(beanDefinition.getPropertyValues().getPropertyValues())
-			.forEach((property) -> LOGGER.warn(property.getName() + " --> " + property.getValue()));
-		LOGGER.warn("primary --> " + beanDefinition.isPrimary());
+			.forEach((property) -> LOGGER.warn(getFormatString(property.getName(), property.getValue())));
+		LOGGER.warn(getFormatString("primary", beanDefinition.isPrimary()));
 	}
 
 	private String getDataSourceName(BeanDefinitionRegistry registry, String dataSourceName,
@@ -194,12 +197,22 @@ public class DataSourceRegister implements ImportBeanDefinitionRegistrar, Enviro
 			}
 		}
 		if (clazz != null) {
-			LOGGER.warn("dataSourceType --> " + clazz.getName());
+			LOGGER.warn(getFormatString("dataSourceType", clazz.getName()));
 		} else {
 			LOGGER.warn("Can not find DataSource Type ", DATA_SOURCE_TYPE_NAMES);
 		}
 
 		return clazz;
 
+	}
+
+	private String getFormatString(String key, Object value) {
+		String res;
+		if (s.length() > key.length()) {
+			res = String.format("%s----%s%s", key, s.substring(key.length() - 1), value);
+		} else {
+			res = String.format("%s----%s%s", key, "", value);
+		}
+		return res;
 	}
 }
